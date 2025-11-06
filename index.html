@@ -275,10 +275,10 @@ async function main(){
       }
       return name;
     }
-
-    const typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
-    
+let typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
+    alert(typingRef)
     input.addEventListener("input", () => {
+    typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
         set(typingRef, true);
     });
 

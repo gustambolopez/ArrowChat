@@ -69,6 +69,7 @@
       font-size: 12px;
       color: #ff0033;
       margin-bottom: 5px;
+      height: 15px; /* Added height to prevent layout shift */
     }
     .messages {
       flex: 1;
@@ -135,26 +136,103 @@
     <div class="messages" id="messages"></div>
     <div class="input-box">
       <input type="text" id="chatInput" placeholder="Type your message..." />
-      <button onclick="sendMessage()">Send</button>
+      <button id="sendButton">Send</button> <!-- Changed to use addEventListener -->
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
-    import { getDatabase, ref, push, onChildAdded, set, onValue } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-analytics.js";
+    import { getDatabase, ref, push, onChildAdded, set, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCHJnsCgQhsJYkhRXHttHqHQVStD4pIzYo",
-      authDomain: "arrowchat-71349.firebaseapp.com",
-      databaseURL: "https://arrowchat-71349-default-rtdb.firebaseio.com",
-      projectId: "arrowchat-71349",
-      storageBucket: "arrowchat-71349.firebasestorage.app",
-      messagingSenderId: "88555526205",
-      appId: "1:88555526205:web:05e291fcea233eaf07b254",
-      measurementId: "G-2GWYTSC2JY"
-    };
+async function main(){
+    class encryption {
+        static #arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+        static #base64ToArrayBuffer(base64) {
+            const binary_string = window.atob(base64);
+            const len = binary_string.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binary_string.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        static async encrypt(plainText) {
+            try {
+                const key = await window.crypto.subtle.generateKey(
+                    {
+                        name: "AES-GCM",
+                        length: 256,
+                    },
+                    true, 
+                    ["encrypt", "decrypt"]
+                );
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                const encodedData = new TextEncoder().encode(JSON.stringify(plainText));
+                const encryptedBuffer = await window.crypto.subtle.encrypt(
+                    {
+                        name: "AES-GCM",
+                        iv: iv,
+                    },
+                    key,
+                    encodedData
+                );
+                const keyJwk = await window.crypto.subtle.exportKey("jwk", key);
+                const packet = {
+                    jwk: keyJwk,
+                    iv: this.#arrayBufferToBase64(iv),
+                    data: this.#arrayBufferToBase64(encryptedBuffer)
+                };
+                const packetString = JSON.stringify(packet);
+                return window.btoa(packetString);
+            } catch (error) {
+                console.error("Encryption failed:", error);
+                throw error;
+            }
+        }
+        static async decrypt(packetB64) {
+            try {
+                const packetString = window.atob(packetB64);
+                const packet = JSON.parse(packetString);
+                const key = await window.crypto.subtle.importKey(
+                    "jwk",
+                    packet.jwk,
+                    {
+                        name: "AES-GCM",
+                    },
+                    true,
+                    ["encrypt", "decrypt"]
+                );
+
+                const iv = this.#base64ToArrayBuffer(packet.iv);
+                const encryptedBuffer = this.#base64ToArrayBuffer(packet.data);
+
+                const decryptedBuffer = await window.crypto.subtle.decrypt(
+                    {
+                        name: "AES-GCM",
+                        iv: iv,
+                    },
+                    key,
+                    encryptedBuffer
+                );
+
+                return JSON.parse(new TextDecoder().decode(decryptedBuffer));
+            } catch (error) {
+                console.error("Decryption failed:", error);
+                throw error;
+            }
+        }
+    }
+    const firebaseConfig = await encryption.decrypt("eyJqd2siOnsiYWxnIjoiQTI1NkdDTSIsImV4dCI6dHJ1ZSwiayI6IlNuSnAxcmZyRnpoNldoV3NWY3BabE1Gb2RMa2NJQkF1RFpKT3hCWmFYOEEiLCJrZXlfb3BzIjpbImVuY3J5cHQiLCJkZWNyeXB0Il0sImt0eSI6Im9jdCJ9LCJpdiI6IlZoUjY2NVhvVlNKTWRGN1oiLCJkYXRhIjoicGpPd2xtcXNtaHRPTFkvZldPbjFRTHNJV2FmOG1sRFZxNjhxWE8yVFBKWkpTQVg1Q2dQRzduam4yVmxmVlRha056TU9XQUl2S0NXQkgxcXkxUDhjaWpGRkM1WXNjRGdEaEZrNjBWZTEyL1JSNy9GMXlRQW45bVlrWmdmbkxzYVJFampYT2FGbUp1WENIS3JaVVZTc3FubDhxK0tyR2JtdEFHUCtEYlRrTnhPbDU0bFRwdG85Wm9HL3UwalpqL3NWdnIzb1I5dG43bjlSQTMrMUZXTEpKSGt3aFhiL1hLdmlsTzVEL0d0dnU4aFVRZzBWRlVVZEpOdHQ3SFUreHZ3NUh2R3RlcmdUV1NOUGNvUlhNU2JxWXlZZFlQWVBDL0dyUHNrRDIyd2dJaWdpS3B3ZS82SEVzdkIrVzg5SldaM1kySkxrVEJPdVhxak9IUDVrZ2t6QkQvVHU4UVV6RmJGRklzSExEQTg4QXRnWE9JZHpwNGJJVHhYZm1EdmVMdnFVbnpjdmZLTysrUDgxREpBTFhtUjE5YUxlbDRSdlN6YjNJRk1YUmRCSGF1MSt3QkdTME8vWTVSM0VxL2pJZExaZ1Z2Q0FQWW1xcjh6ZEl1SEtCdG1rUXdvMXZCK0F2QlZwVFZTSVZpMk9EZVBOdkJ6M3ZtaFJ6eTROenNJd0xFYz0ifQ==");
 
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
@@ -173,20 +251,12 @@
     });
 
     const colors = ["Red", "Blue", "Green", "Yellow", "Purple", "Cyan", "Orange", "Pink", "White"];
-    const colorCounts = {};
     const colorSelect = document.getElementById("userColor");
 
     colors.forEach(color => {
-      let label = color;
-      if (colorCounts[color]) {
-        colorCounts[color]++;
-        label += ` (${colorCounts[color]})`;
-      } else {
-        colorCounts[color] = 1;
-      }
       const option = document.createElement("option");
       option.value = color.toLowerCase();
-      option.textContent = label;
+      option.textContent = color;
       colorSelect.appendChild(option);
     });
 
@@ -194,6 +264,7 @@
     const input = document.getElementById("chatInput");
     const typingStatus = document.getElementById("typingStatus");
     const usernameInput = document.getElementById("usernameInput");
+    const sendButton = document.getElementById("sendButton");
 
     function getUsername() {
       let name = usernameInput.value.trim();
@@ -205,15 +276,16 @@
       return name;
     }
 
-    input.addEventListener("keypress", (e) => {
-      set(ref(db, "typing"), true);
-      if (e.key === "Enter") sendMessage();
+    const typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
+    
+    input.addEventListener("input", () => {
+        set(typingRef, true);
     });
 
     input.addEventListener("blur", () => {
-      set(ref(db, "typing"), false);
+      set(typingRef, false);
     });
-
+    
     function sendMessage() {
       const msg = input.value.trim();
       const color = document.getElementById("userColor").value;
@@ -226,21 +298,36 @@
           timestamp: Date.now()
         });
         input.value = "";
-        set(ref(db, "typing"), false);
+        set(typingRef, false);
       }
     }
+
+    sendButton.addEventListener('click', sendMessage);
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
 
     onChildAdded(ref(db, "messages"), snapshot => {
       const data = snapshot.val();
       const div = document.createElement("div");
       div.className = "message";
-      div.innerHTML = `<span style="color:${data.color}">${data.username}: ${data.text}</span>`;
+      div.innerHTML = `<span style="font-weight: bold; color:${data.color};">${data.username}:</span> ${data.text}`;
       messages.prepend(div);
     });
 
     onValue(ref(db, "typing"), snapshot => {
-      typingStatus.textContent = snapshot.val() ? "This user is typing..." : "";
+      const typingUsers = snapshot.val();
+      let typingText = '';
+      if(typingUsers) {
+          const users = Object.keys(typingUsers).filter(user => typingUsers[user] && user !== getUsername());
+          if (users.length > 0) {
+              typingText = `${users.join(', ')} is typing...`;
+          }
+      }
+      typingStatus.textContent = typingText;
     });
+}
+main();
   </script>
 </body>
 </html>

@@ -276,9 +276,8 @@ async function main(){
       return name;
     }
 let typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
-    alert(typingRef)
     input.addEventListener("input", () => {
-    typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
+      typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
         set(typingRef, true);
     });
 

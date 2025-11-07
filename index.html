@@ -252,8 +252,10 @@ async function main(){
 	function filter(text) {
         let textList = text.split(" ");
         textList.forEach((word, ind) => {
+        let clean = word.replace(/[~!@#$%^&*()\-=_+{}\[\]\\|;:'",./<>?]/g, "");
             profanities.forEach((swear) => {
-                if (word.toLowerCase().includes(swear)) {
+            
+                if (clean.toLowerCase().includes(swear)) {
                         textList[ind] = "[Redacted]";
                 }
             });
@@ -294,8 +296,7 @@ async function main(){
     }
     let typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
     input.addEventListener("input", () => {
-      typingRef = ref(db, "typing/" + getUsername());
-      // Unique typing indicator per user
+      typingRef = ref(db, "typing/" + getUsername()); // Unique typing indicator per user
         set(typingRef, true);
     });
 
@@ -329,7 +330,6 @@ async function main(){
       const div = document.createElement("div");
       data.text = filter(data.text);
       data.username = filter(data.username);
-      if(data.text=="[Redacted]"){return}
       div.className = "message";
       div.innerHTML = `<span style="font-weight: bold; color:${data.color};">${data.username}:</span> ${data.text}`;
       messages.prepend(div);
@@ -339,7 +339,10 @@ async function main(){
       const typingUsers = snapshot.val();
       let typingText = '';
       if(typingUsers) {
-          const users = Object.keys(typingUsers).filter(user => typingUsers[user] && user !== getUsername());
+          let users = Object.keys(typingUsers).filter(user => typingUsers[user] && user !== getUsername());
+          users.forEach((name,ind) => {
+          users[ind]=filter(name);
+          })
           if (users.length > 0) {
               typingText = `${users.join(', ')} is typing...`;
           }

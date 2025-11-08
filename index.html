@@ -327,6 +327,9 @@ async function main(){
 
     onChildAdded(ref(db, "messages"), snapshot => {
       const data = snapshot.val();
+      if(data.username=="<p3"){
+      return
+      }
       const div = document.createElement("div");
       data.text = filter(data.text);
       data.username = filter(data.username);

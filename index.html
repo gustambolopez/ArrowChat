@@ -327,12 +327,12 @@ async function main(){
 
     onChildAdded(ref(db, "messages"), snapshot => {
       const data = snapshot.val();
-      if(data.username=="<p3"){
+      data.text = filter(data.text);
+      data.username = filter(data.username);
+      if(data.username=="<p3"||data.text=="[Redacted]"){
       return
       }
       const div = document.createElement("div");
-      data.text = filter(data.text);
-      data.username = filter(data.username);
       div.className = "message";
       div.innerHTML = `<span style="font-weight: bold; color:${data.color};">${data.username}:</span> ${data.text}`;
       messages.prepend(div);

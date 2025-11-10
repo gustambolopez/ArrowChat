@@ -472,7 +472,7 @@
                 overflow-y: auto;
                 padding: 24px;
                 display: flex;
-                flex-direction: column-reverse;
+                flex-direction: column;
             }
 
             .messages-container::-webkit-scrollbar {
@@ -1721,6 +1721,8 @@
                                 this.elements.messagesContainer.innerHTML = "";
                                 this.elements.messagesContainer.appendChild(messagesFragment);
                                 this.loadImages();
+                                 const container = this.elements.messagesContainer;
+    container.scrollTop = container.scrollHeight;
                             } else {
                                 this.showEmptyState();
                             }
@@ -2062,8 +2064,10 @@
                             list: filtered.list,
                         });
 
-                        this.elements.messagesContainer.prepend(messageDiv);
+                        this.elements.messagesContainer.append(messageDiv);
                         this.loadImages();
+                        const container = this.elements.messagesContainer;
+    container.scrollTop = container.scrollHeight;
                     });
 
                     onValue(ref(this.db, "typing"), (snapshot) => {
@@ -2097,4 +2101,3 @@
         </script>
     </body>
 </html>
-

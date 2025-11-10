@@ -1951,7 +1951,7 @@
                     const msg = this.elements.chatInput.value.trim();
                     const color = this.userColor;
                     const username = this.getUsername();
-
+					if(msg.length>=200||username.length>=20) return;
                     if (msg) {
                         push(ref(this.db, "messages"), {
                             text: msg,

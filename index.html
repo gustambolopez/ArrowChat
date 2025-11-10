@@ -1282,7 +1282,8 @@
                     this.username = this.loadUsername();
                     this.userColor = this.loadUserColor();
                     this.isLoading = false;
-
+					this.cur = 0;
+                    setInterval(()=>{this.cur=0}, 60000)
                     this.elements = {
                         messagesContainer: document.getElementById("messagesContainer"),
                         chatInput: document.getElementById("chatInput"),
@@ -1946,6 +1947,7 @@
                 }
 
                 sendMessage() {
+                	if(this.cur>=30) return;
                     const msg = this.elements.chatInput.value.trim();
                     const color = this.userColor;
                     const username = this.getUsername();
@@ -1964,6 +1966,7 @@
                         this.elements.chatInput.style.height = "auto";
                         if (this.typingRef) {
                             set(this.typingRef, false);
+                            this.cur++
                         }
                     }
                 }
